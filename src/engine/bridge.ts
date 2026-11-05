@@ -8,6 +8,8 @@ export function startEngine(): () => void {
   let lastTime = performance.now();
   let accumulatedTime = 0;
   let animationFrameId: number;
+  let wasAuto = store.getState().pid.auto; // for bumpless manual -> auto transfer
+  let lastTc = store.getState().pid.manualTc;
 
   const initialPid = store.getState().pid;
   if (initialPid.auto) {
@@ -30,9 +32,14 @@ export function startEngine(): () => void {
         const currentParams = store.getState().params;
         const currentPid = store.getState().pid;
 
+        if (currentPid.auto && !wasAuto) pid.bumpless(currentPid, currentLive.T, lastTc);
+        wasAuto = currentPid.auto;
+
         const tc = currentPid.auto
           ? pid.step(currentPid, currentLive.T, simDt)
           : Math.min(TC_MAX, Math.max(TC_MIN, currentPid.manualTc));
+
+        lastTc = tc;
 
         const vecState = { CA: currentLive.CA, CB: currentLive.CB, T: currentLive.T };
 
