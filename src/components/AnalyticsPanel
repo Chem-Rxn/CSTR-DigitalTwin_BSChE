@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CSVExportButton from './CSVExportButton';
 
 // 1. Preset Scenarios Configuration
 const SCENARIOS = [
@@ -11,7 +12,7 @@ const SCENARIOS = [
     id: 'runaway',
     label: 'Cooling Failure Runaway',
     params: { temperature: 480, flowRate: 25.0, coolingTemp: 360, concentration: 2.2, conversion: 0.42 }
-  }
+  }, // Added missing comma here
   {
     id: 'optimal',
     label: 'Optimal High-Conversion Setpoint',
@@ -22,11 +23,11 @@ const SCENARIOS = [
 export default function AnalyticsPanel() {
   const [activeScenario, setActiveScenario] = useState(SCENARIOS[0].id);
   const [currentParams, setCurrentParams] = useState(SCENARIOS[0].params);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [isTableExpanded, setIsTableExpanded] = useState(true);
 
   // Apply scenario presets
-  const handleSelectScenario = (scenario) => {
+  const handleSelectScenario = (scenario: typeof SCENARIOS[0]) => {
     setActiveScenario(scenario.id);
     setCurrentParams(scenario.params);
   };
@@ -34,8 +35,7 @@ export default function AnalyticsPanel() {
   // Live simulation tick: appends new timestamped data to the table log
   useEffect(() => {
     const interval = setInterval(() => {
-      // Add slight noise/fluctuation to simulate real-time CSTR dynamic behavior
-      const jitter = (val) => Number((val + (Math.random() - 0.5) * 0.02 * val).toFixed(2));
+      const jitter = (val: number) => Number((val + (Math.random() - 0.5) * 0.02 * val).toFixed(2));
 
       const newLogEntry = {
         timestamp: new Date().toLocaleTimeString(),
@@ -47,39 +47,11 @@ export default function AnalyticsPanel() {
         conversion: Math.min(100, Math.max(0, jitter(currentParams.conversion * 100)))
       };
 
-      setHistory((prevLogs) => [newLogEntry, ...prevLogs.slice(0, 49)]); // Keep last 50 logs
+      setHistory((prevLogs) => [newLogEntry, ...prevLogs.slice(0, 49)]);
     }, 2000);
 
     return () => clearInterval(interval);
   }, [activeScenario, currentParams]);
-
-  // 3. One-Click CSV Export Functionality
-  const exportToCSV = () => {
-    if (history.length === 0) {
-      alert("No simulation data available to export.");
-      return;
-    }
-
-    const headers = ["Timestamp", "Scenario", "Temp (K)", "Flow Rate (L/min)", "Cooling Temp (K)", "Concentration (mol/L)", "Conversion (%)"];
-    const rows = history.map((row) => [
-      `"${row.timestamp}"`,
-      `"${row.scenario}"`,
-      row.temperature,
-      row.flowRate,
-      row.coolingTemp,
-      row.concentration,
-      row.conversion
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `CSTR_Simulation_Report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   return (
     <div className="p-6 max-w-6xl mx-auto bg-slate-900 text-white rounded-xl shadow-2xl space-y-6 border border-slate-800 font-sans">
@@ -91,13 +63,8 @@ export default function AnalyticsPanel() {
           <p className="text-xs text-slate-400">Member 4 Operational Dashboard</p>
         </div>
         
-        {/* 3. One-Click CSV Export Button */}
-        <button
-          onClick={exportToCSV}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium shadow transition flex items-center gap-2 text-sm"
-        >
-          <span>📥</span> Export CSV Report
-        </button>
+        {/* PLACED HERE: CSV Export Button Component */}
+        <CSVExportButton />
       </div>
 
       {/* 1. Scenario Preset Selector Toolbar */}
@@ -176,7 +143,7 @@ export default function AnalyticsPanel() {
               <tbody className="divide-y divide-slate-800 font-mono">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="p-4 text-center text-slate-500">Generating initial snapshots...</td>
+                    <td colSpan={7} className="p-4 text-center text-slate-500">Generating initial snapshots...</td>
                   </tr>
                 ) : (
                   history.map((snapshot, idx) => (
