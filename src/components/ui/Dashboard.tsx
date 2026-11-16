@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import InputsPanel from './InputsPanel';
 import PidPanel from './PidPanel';
 import ScenarioBar from './ScenarioBar';
-import AnalyticsPanel from './AnalyticsPanel';
 import Viewport from './Viewport';
 import ScadaStrip from '@/components/scada/ScadaStrip';
 import EsdPanel from '@/components/scada/EsdPanel';
@@ -10,6 +9,7 @@ import InterlockBanner from '@/components/scada/InterlockBanner';
 import { startInterlocks } from '@/engine/interlocks';
 import { useSimulationStore } from '@/store/useSimulationStore';
 import { useUIStore } from '@/store/useUIStore';
+import Task4 from '../task4';
 
 export default function Dashboard() {
   useEffect(() => startInterlocks(), []); // ESD latch + auto-trip
@@ -123,7 +123,7 @@ export default function Dashboard() {
 
           {/* Bottom Half: Real-time Recharts Analytics Graphs */}
           <div className="h-56 bg-slate-950 p-2 shrink-0 border-t border-slate-800">
-            <AnalyticsPanel />
+            <Task4 />
           </div>
 
         </section>
