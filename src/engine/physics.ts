@@ -192,11 +192,11 @@ export class PID {
     const dPV = Number.isNaN(this.prevPV) ? 0 : (pv - this.prevPV) / dt;
     this.prevPV = pv;
 
-    const unsat = cfg.bias + cfg.Kp * e + cfg.Ki * this.integral + cfg.Kd * dPV;
+    const unsat = cfg.bias + cfg.Kp * e + cfg.Ki * this.integral - cfg.Kd * dPV; // derivative-on-PV opposes a rising PV (was +, which is positive feedback)
     const out = clamp(unsat, TC_MIN, TC_MAX);
     const saturated = out !== unsat;
 
-    if (!saturated || Math.sign(e) !== Math.sign(out - unsat)) {
+    if (!saturated || Math.sign(e) === Math.sign(out - unsat)) {
       this.integral += e * dt;
     }
     return out;

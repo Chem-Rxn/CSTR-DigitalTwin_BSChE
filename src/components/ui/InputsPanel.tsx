@@ -3,6 +3,8 @@ import ScenarioBar from './ScenarioBar';
 import { useSimulationStore } from '@/store/useSimulationStore';
 import { useUIStore, TabId } from '@/store/useUIStore';
 import { CHEMICAL_SYSTEMS } from '@/engine/physics';
+import { useControlStore } from '@/store/useControlStore';
+import PidDials from '@/components/scada/PidDials';
 
 const TABS: { id: TabId | 'chem'; label: string }[] = [
   { id: 'flow', label: 'Flow & Feed' },
@@ -79,43 +81,12 @@ function ChemSystemSelector() {
   );
 }
 
-function Pid() {
-  const pid = useSimulationStore((s) => s.pid);
-  const set = useSimulationStore((s) => s.setPid);
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-1">Temperature Jacket Control</div>
-      <div className="flex flex-col gap-1.5 p-2 bg-slate-900/60 border border-slate-800 rounded-lg">
-        <span className="text-xs font-medium text-slate-300">Controller Mode</span>
-        <div className="flex rounded overflow-hidden border border-slate-700 w-fit">
-          {(['Manual', 'Auto'] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => set({ auto: m === 'Auto' })}
-              className={`px-4 py-1 text-xs font-mono ${pid.auto === (m === 'Auto') ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 bg-slate-950'}`}
-            >
-              {m}
-            </button>
-          ))}
-        </div>
-      </div>
-      {pid.auto ? (
-        <Field label="Temperature Setpoint (Tsp)" unit="K" value={pid.Tsp} min={280} max={420} step={0.5} digits={1} onChange={(v) => set({ Tsp: v })} />
-      ) : (
-        <Field label="Manual Jacket Temp (Tc)" unit="K" value={pid.manualTc} min={270} max={420} step={0.5} digits={1} onChange={(v) => set({ manualTc: v })} />
-      )}
-      <Field label="Proportional Gain (Kp)" unit="K/K" value={pid.Kp} min={0} max={30} step={0.1} digits={2} onChange={(v) => set({ Kp: v })} />
-      <Field label="Integral Gain (Ki)" unit="K/(K·min)" value={pid.Ki} min={0} max={10} step={0.05} digits={2} onChange={(v) => set({ Ki: v })} />
-      <Field label="Derivative Gain (Kd)" unit="K·min/K" value={pid.Kd} min={0} max={5} step={0.01} digits={2} onChange={(v) => set({ Kd: v })} />
-      <Field label="Output Bias" unit="K" value={pid.bias} min={280} max={360} step={0.5} digits={1} onChange={(v) => set({ bias: v })} />
-    </div>
-  );
-}
-
 export default function InputsPanel() {
   const tab = useUIStore((s) => s.tab);
   const setTab = useUIStore((s) => s.setTab);
   const highlight = useUIStore((s) => s.pidHighlight);
+  const esd = useControlStore((s) => s.esdActive);
+  const locked = esd && (tab === 'flow' || tab === 'pid'); // feed + cooling are held by the ESD interlock
 
   return (
     <section className="h-full min-h-0 flex flex-col bg-slate-950 border-t border-r border-slate-800">
@@ -133,10 +104,17 @@ export default function InputsPanel() {
         </nav>
       </header>
       <div className={`flex-1 min-h-0 overflow-y-auto p-4 transition-shadow ${highlight && tab === 'pid' ? 'shadow-[inset_0_0_0_2px_#22d3ee] animate-pulse' : ''}`}>
-        {tab === 'flow' && <Flow />}
-        {tab === 'thermo' && <Thermo />}
-        {tab === 'chem' && <ChemSystemSelector />}
-        {tab === 'pid' && <Pid />}
+        {locked && (
+          <div className="mb-3 rounded border border-red-700/70 bg-red-950/50 px-3 py-2 text-xs font-mono text-red-300">
+            ESD ACTIVE: feed and cooling controls are locked until the interlock is reset.
+          </div>
+        )}
+        <div className={locked ? 'pointer-events-none opacity-40' : ''}>
+          {tab === 'flow' && <Flow />}
+          {tab === 'thermo' && <Thermo />}
+          {tab === 'chem' && <ChemSystemSelector />}
+          {tab === 'pid' && <PidDials />}
+        </div>
       </div>
     </section>
   );

@@ -1,13 +1,19 @@
-import React from 'react';
+import { useEffect } from 'react';
 import InputsPanel from './InputsPanel';
 import PidPanel from './PidPanel';
 import ScenarioBar from './ScenarioBar';
 import AnalyticsPanel from './AnalyticsPanel';
 import Viewport from './Viewport';
+import ScadaStrip from '@/components/scada/ScadaStrip';
+import EsdPanel from '@/components/scada/EsdPanel';
+import InterlockBanner from '@/components/scada/InterlockBanner';
+import { startInterlocks } from '@/engine/interlocks';
 import { useSimulationStore } from '@/store/useSimulationStore';
 import { useUIStore } from '@/store/useUIStore';
 
 export default function Dashboard() {
+  useEffect(() => startInterlocks(), []); // ESD latch + auto-trip
+
   const running = useSimulationStore((s) => s.running);
   const setRunning = useSimulationStore((s) => s.setRunning);
   const reset = useSimulationStore((s) => s.reset);
@@ -71,12 +77,19 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* SCADA: flashing ESD banner (only while tripped) + control-room strip */}
+      <InterlockBanner />
+      <ScadaStrip />
+
       {/* MAIN WORKSPACE GRID */}
       <main className="flex flex-1 overflow-hidden">
         
         {/* LEFT COLUMN: Configuration & PID Panels */}
         <aside className="w-[400px] flex flex-col border-r border-slate-800 bg-slate-950 shrink-0 z-10 overflow-hidden">
-          <InputsPanel />
+          <div className="flex-1 min-h-0">
+            <InputsPanel />
+          </div>
+          <EsdPanel />
         </aside>
 
         {/* RIGHT COLUMN: 3D Viewport + P&ID Schematics + Live Analytics Graphs */}
