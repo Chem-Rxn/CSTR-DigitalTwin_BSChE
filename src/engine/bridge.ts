@@ -1,5 +1,6 @@
 import { useSimulationStore } from '@/store/useSimulationStore';
 import { rk4, PID, TC_MIN, TC_MAX, calcRateK } from './physics';
+import { recordSolverStep } from './telemetry';
 
 export function startEngine(): () => void {
   const store = useSimulationStore;
@@ -41,6 +42,7 @@ export function startEngine(): () => void {
 
         lastTc = tc;
 
+        const stepStart = performance.now(); // telemetry
         const vecState = { CA: currentLive.CA, CB: currentLive.CB, T: currentLive.T };
 
         const nSteps = 5;
@@ -49,6 +51,8 @@ export function startEngine(): () => void {
         for (let i = 0; i < nSteps; i++) {
           nextVec = rk4(nextVec, tc, currentParams, h);
         }
+
+        recordSolverStep(simDt, h, nSteps, performance.now() - stepStart);
 
         const newTime = currentLive.t + simDt;
         const conversion = Math.max(0, Math.min(1, (currentParams.CAO - nextVec.CA) / currentParams.CAO));
